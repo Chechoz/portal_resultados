@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Resultados Médicos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Incluimos PDF.js para mostrar los PDFs de forma más controlada si es necesario -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Estilos para el visor de PDF incrustado */
+        .pdf-container {
+            width: 100%;
+            height: 60vh;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-blue-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <img src="saz.jpg" alt="Logo SAZ Laboratorio" class="h-12 w-auto mr-3 bg-white rounded px-1 py-0.5" onerror="this.onerror=null; this.src='https://placehold.co/150x50/white/red?text=SAZ';">
+                    <span class="font-bold text-xl tracking-tight hidden sm:block">Portal de Resultados</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Connection status dot -->
+                    <span id="cloud-status" class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-800 text-blue-100">
+                        <span class="h-2 w-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse" id="status-dot"></span>
+                        <span id="status-text">Conectando...</span>
+                    </span>
+                    <button id="nav-patient" class="px-3 py-2 rounded-md text-sm font-medium bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-white">Área Paciente</button>
+                    <button id="nav-admin" class="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-white">Administración</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        
+        <!-- VIEW: Patient Login / Search -->
+        <div id="view-patient-search" class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 fade-in block">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Buscar Resultados</h2>
+                <p class="text-gray-500 mt-2">Ingrese su DNI o Número de Paciente</p>
+            </div>
+            <form id="form-patient-search" class="space-y-4">
+                <div>
+                    <label for="patient-id-input" class="block text-sm font-medium text-gray-700">DNI / ID de Paciente</label>
+                    <input type="text" id="patient-id-input" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: 12345678">
+                </div>
+                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Buscar
+                </button>
+            </form>
+            <div id="search-error" class="mt-4 text-red-500 text-sm text-center hidden">
+                No se encontraron resultados para ese ID.
+            </div>
+        </div>
+
+        <!-- VIEW: Patient Results List -->
+        <div id="view-patient-results" class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 fade-in hidden">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Mis Resultados</h2>
+                    <p class="text-gray-500" id="results-patient-id">Paciente: </p>
+                </div>
+                <button id="btn-back-to-search" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estudio</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows will be populated here by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="no-results-msg" class="text-center py-8 text-gray-500 hidden">
+                No hay resultados cargados aún.
+            </div>
+        </div>
+
+        <!-- VIEW: PDF Viewer -->
+        <div id="view-pdf-viewer" class="w-full max-w-5xl bg-white rounded-xl shadow-lg p-6 fade-in hidden h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900" id="pdf-title">Visor de Resultados</h3>
+                <div class="flex space-x-3">
+                    <button id="btn-close-pdf" class="flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+            <!-- Container for the PDF object -->
+            <div class="flex-grow border rounded-md overflow-hidden bg-gray-100 relative" id="pdf-embed-container">
+                <!-- An iframe or embed tag will be injected here -->
+            </div>
+        </div>
+
+        <!-- VIEW: Admin Upload -->
+        <div id="view-admin" class="w-full max-w-2xl bg-white rounded-xl shadow-lg p-8 fade-in hidden">
+            <div class="border-b pb-4 mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Panel de Administración</h2>
+                <p class="text-gray-500 mt-1">Vincular resultados desde Google Drive</p>
+            </div>
+            
+            <form id="form-upload-result" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="admin-patient-id" class="block text-sm font-medium text-gray-700">DNI / ID de Paciente</label>
+                        <input type="text" id="admin-patient-id" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: 12345678">
+                    </div>
+                    <div>
+                        <label for="admin-study-name" class="block text-sm font-medium text-gray-700">Nombre del Estudio</label>
+                        <input type="text" id="admin-study-name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: Análisis de Sangre">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="admin-drive-url" class="block text-sm font-medium text-gray-700">Enlace de Google Drive (Debe ser público para lectura)</label>
+                    <input type="url" id="admin-drive-url" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="https://drive.google.com/file/d/1A2B3C4D5E/view?usp=sharing">
+                    <p class="text-xs text-gray-500 mt-1">Asegúrate de que el archivo en Drive tenga acceso "Cualquier persona con el enlace".</p>
+                </div>
+
+                <div class="pt-4 border-t border-gray-200 flex justify-end">
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Vincular Resultado
+                    </button>
+                </div>
+            </form>
+            
+            <div id="upload-success" class="mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative hidden" role="alert">
+                <span class="block sm:inline">Archivo cargado exitosamente en la nube.</span>
+            </div>
+            
+            <!-- Admin Data Preview -->
+            <div class="mt-8 pt-6 border-t">
+                <h3 class="text-lg font-medium text-gray-900 mb-3">Registros Actuales (Base de Datos en Tiempo Real)</h3>
+                <div class="max-h-60 overflow-y-auto border rounded-md p-2 bg-gray-50" id="admin-records-list">
+                    <!-- List populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Gemini Explanation Modal -->
+        <div id="gemini-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+            <div class="relative mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex items-center mb-4">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <span class="text-xl">✨</span>
+                        </div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 ml-4" id="gemini-modal-title">¿Qué es este estudio?</h3>
+                    </div>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-700" id="gemini-modal-content">Generando explicación...</p>
+                    </div>
+                    <div class="items-center px-4 py-3 mt-4 text-center sm:px-6 sm:flex sm:flex-row-reverse border-t">
+                        <button id="btn-close-gemini" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Delete Confirmation Modal -->
+        <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+            <div class="relative mx-auto p-5 border w-11/12 max-w-sm shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">¿Eliminar este registro?</h3>
+                    <div class="mt-2 px-4 py-2">
+                        <p class="text-sm text-gray-500">Se desvinculará este estudio del paciente en la nube permanentemente.</p>
+                        <p class="text-xs text-gray-400 mt-2 italic font-semibold" id="delete-record-details"></p>
+                    </div>
+                    <div class="flex justify-center space-x-3 mt-4 border-t pt-4">
+                        <button id="btn-cancel-delete" type="button" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-md transition-colors">
+                            Cancelar
+                        </button>
+                        <button id="btn-confirm-delete" type="button" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Scripts usando Firebase SDK v11 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Configuración e Inicialización de Firebase ---
+        const fallbackConfig = {
+            apiKey: "",
+            authDomain: "dummy-saz.firebaseapp.com",
+            projectId: "dummy-saz",
+            storageBucket: "dummy-saz.appspot.com",
+            messagingSenderId: "0000000000",
+            appId: "1:0000000000:web:000000000"
+        };
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined'
+            ? JSON.parse(__firebase_config)
+            : fallbackConfig;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'saz-portal-resultados';
+
+        // --- State Management ---
+        let uploadedResults = [];
+        let currentPatientId = null;
+        let recordToDeleteId = null;
+        let currentUser = null;
+
+        // --- DOM Elements ---
+        const views = {
+            patientSearch: document.getElementById('view-patient-search'),
+            patientResults: document.getElementById('view-patient-results'),
+            pdfViewer: document.getElementById('view-pdf-viewer'),
+            admin: document.getElementById('view-admin')
+        };
+        
+        const navPatient = document.getElementById('nav-patient');
+        const navAdmin = document.getElementById('nav-admin');
+        const cloudStatus = document.getElementById('cloud-status');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+
+        // Forms and Inputs
+        const formPatientSearch = document.getElementById('form-patient-search');
+        const inputPatientId = document.getElementById('patient-id-input');
+        const searchError = document.getElementById('search-error');
+        
+        const formUpload = document.getElementById('form-upload-result');
+        const driveUrlInput = document.getElementById('admin-drive-url');
+        const uploadSuccess = document.getElementById('upload-success');
+        const adminRecordsList = document.getElementById('admin-records-list');
+
+        // Delete Modal Elements
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        const deleteRecordDetails = document.getElementById('delete-record-details');
+        const btnCancelDelete = document.getElementById('btn-cancel-delete');
+        const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+
+        // Results View
+        const resultsPatientIdText = document.getElementById('results-patient-id');
+        const resultsTableBody = document.getElementById('results-table-body');
+        const noResultsMsg = document.getElementById('no-results-msg');
+        const btnBackToSearch = document.getElementById('btn-back-to-search');
+
+        // PDF View
+        const pdfEmbedContainer = document.getElementById('pdf-embed-container');
+        const pdfTitle = document.getElementById('pdf-title');
+        const btnClosePdf = document.getElementById('btn-close-pdf');
+
+        // --- Autenticación Obligatoria (Regla 3) ---
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Error en autenticación Firebase:", error);
+                statusText.textContent = "Error de Red";
+                statusDot.className = "h-2 w-2 rounded-full bg-red-500 mr-1.5";
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            cloudStatus.classList.remove('hidden');
+            if (user) {
+                statusText.textContent = "Nube Conectada";
+                statusDot.className = "h-2 w-2 rounded-full bg-green-400 mr-1.5";
+                // Iniciar el listener de Firestore en tiempo real
+                setupFirestoreSync();
+            } else {
+                statusText.textContent = "Autenticando...";
+                statusDot.className = "h-2 w-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse";
+                initAuth();
+            }
+        });
+
+        // --- Firestore Sincronización en Tiempo Real (Regla 1 y 2) ---
+        // Usamos la ruta estrictamente requerida: /artifacts/{appId}/public/data/{collectionName}
+        const resultsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'results');
+
+        function setupFirestoreSync() {
+            if (!currentUser) return;
+
+            // Escuchamos en tiempo real con onSnapshot con callback de error obligatorio
+            onSnapshot(resultsCollectionRef, (snapshot) => {
+                uploadedResults = [];
+                snapshot.forEach((doc) => {
+                    uploadedResults.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Ordenamos en memoria local (Evita queries compuestas en Firestore - Regla 2)
+                uploadedResults.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                // Actualizar las vistas correspondientes según donde estemos parados
+                updateAdminRecordsView();
+                if (currentPatientId) {
+                    const patientRecords = uploadedResults.filter(record => record.patientId === currentPatientId);
+                    renderPatientResults(patientRecords);
+                }
+            }, (error) => {
+                console.error("Error en sincronización en tiempo real:", error);
+            });
+        }
+
+        // --- Navigation Logic ---
+        function switchView(viewName) {
+            Object.values(views).forEach(v => {
+                v.classList.remove('block', 'flex');
+                v.classList.add('hidden');
+            });
+            
+            if (viewName === 'pdfViewer') {
+                views[viewName].classList.remove('hidden');
+                views[viewName].classList.add('flex');
+            } else {
+                views[viewName].classList.remove('hidden');
+                views[viewName].classList.add('block');
+            }
+
+            if (viewName === 'admin') {
+                navAdmin.classList.add('bg-blue-700', 'text-white');
+                navAdmin.classList.remove('text-blue-100');
+                navPatient.classList.remove('bg-blue-700', 'text-white');
+                navPatient.classList.add('text-blue-100');
+            } else {
+                navPatient.classList.add('bg-blue-700', 'text-white');
+                navPatient.classList.remove('text-blue-100');
+                navAdmin.classList.remove('bg-blue-700', 'text-white');
+                navAdmin.classList.add('text-blue-100');
+            }
+        }
+
+        navPatient.addEventListener('click', () => {
+            switchView('patientSearch');
+            inputPatientId.value = '';
+            searchError.classList.add('hidden');
+            currentPatientId = null;
+        });
+
+        navAdmin.addEventListener('click', () => {
+            switchView('admin');
+            updateAdminRecordsView();
+            uploadSuccess.classList.add('hidden');
+        });
+
+        btnBackToSearch.addEventListener('click', () => {
+            switchView('patientSearch');
+            currentPatientId = null;
+        });
+
+        // --- Admin Logic (File Linking) ---
+        function extractDriveFileId(url) {
+            const match1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (match1) return match1[1];
+            
+            const match2 = url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match2) return match2[1];
+            
+            return null;
+        }
+
+        formUpload.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentUser) {
+                alert("No estás conectado a la base de datos. Reintentando...");
+                return;
+            }
+
+            const patientId = document.getElementById('admin-patient-id').value.trim();
+            const studyName = document.getElementById('admin-study-name').value.trim();
+            const driveUrl = driveUrlInput.value.trim();
+
+            if (!patientId || !studyName || !driveUrl) return;
+
+            const fileId = extractDriveFileId(driveUrl);
+
+            if (!fileId) {
+                alert("Por favor, ingrese un enlace válido de Google Drive.");
+                return;
+            }
+
+            const recordId = Date.now().toString();
+            const newRecord = {
+                patientId: patientId,
+                studyName: studyName,
+                date: new Date().toLocaleDateString('es-AR'),
+                driveFileId: fileId,
+                createdAt: Date.now()
+            };
+
+            try {
+                // Escribir en la base de datos de manera atómica (Regla 1)
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'results', recordId), newRecord);
+                
+                uploadSuccess.classList.remove('hidden');
+                setTimeout(() => uploadSuccess.classList.add('hidden'), 3000);
+                formUpload.reset();
+            } catch (error) {
+                console.error("Error guardando en Firestore:", error);
+                alert("Error de conexión al guardar el archivo en la nube.");
+            }
+        });
+
+        // --- Delete Record Logic ---
+        window.openDeleteConfirm = function(recordId) {
+            const record = uploadedResults.find(r => r.id === recordId);
+            if (!record) return;
+            
+            recordToDeleteId = recordId;
+            deleteRecordDetails.textContent = `DNI: ${record.patientId} | ${record.studyName}`;
+            deleteConfirmModal.classList.remove('hidden');
+        };
+
+        btnCancelDelete.addEventListener('click', () => {
+            deleteConfirmModal.classList.add('hidden');
+            recordToDeleteId = null;
+        });
+
+        btnConfirmDelete.addEventListener('click', async () => {
+            if (recordToDeleteId && currentUser) {
+                try {
+                    // Borrado directo en la base de datos en la nube
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'results', recordToDeleteId));
+                    deleteConfirmModal.classList.add('hidden');
+                    recordToDeleteId = null;
+                } catch (error) {
+                    console.error("Error al borrar de Firestore:", error);
+                    alert("Error al intentar borrar el registro.");
+                }
+            }
+        });
+
+        function updateAdminRecordsView() {
+            adminRecordsList.innerHTML = '';
+            if (uploadedResults.length === 0) {
+                adminRecordsList.innerHTML = '<p class="text-sm text-gray-500 italic p-2">No hay registros cargados aún.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            ul.className = 'space-y-2';
+            
+            uploadedResults.forEach(record => {
+                const li = document.createElement('li');
+                li.className = 'text-sm p-3 bg-white rounded-lg border shadow-sm flex justify-between items-center hover:bg-gray-50 transition-colors';
+                li.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="font-medium text-gray-800">DNI: ${record.patientId}</span>
+                        <span class="text-xs text-gray-500">${record.studyName} (${record.date})</span>
+                    </div>
+                    <button onclick="openDeleteConfirm('${record.id}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-colors" title="Eliminar registro">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                `;
+                ul.appendChild(li);
+            });
+            adminRecordsList.appendChild(ul);
+        }
+
+        // --- Patient Logic (Searching and Viewing) ---
+        formPatientSearch.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const searchId = inputPatientId.value.trim();
+            
+            if (!searchId) return;
+
+            // Buscamos sobre los datos cargados de forma local (cumple Regla 2 - No queries complejas)
+            const patientRecords = uploadedResults.filter(record => record.patientId === searchId);
+
+            if (patientRecords.length > 0) {
+                searchError.classList.add('hidden');
+                currentPatientId = searchId;
+                renderPatientResults(patientRecords);
+                switchView('patientResults');
+            } else {
+                searchError.classList.remove('hidden');
+            }
+        });
+
+        function renderPatientResults(records) {
+            resultsPatientIdText.textContent = `DNI / ID: ${currentPatientId}`;
+            resultsTableBody.innerHTML = '';
+            
+            if (records.length === 0) {
+                noResultsMsg.classList.remove('hidden');
+                return;
+            }
+            
+            noResultsMsg.classList.add('hidden');
+
+            records.forEach(record => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${record.date}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${record.studyName}</div>
+                        <div class="text-xs text-gray-500 text-blue-500">Enlace de Drive vinculado</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        <button onclick="explainStudy('${record.studyName}')" class="text-purple-600 hover:text-purple-900 bg-purple-50 px-3 py-1 rounded-md hover:bg-purple-100 transition-colors border border-purple-200" title="Explicación con IA">
+                            ✨ ¿De qué trata?
+                        </button>
+                        <button onclick="openPdfViewer('${record.id}')" class="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded-md hover:bg-blue-100 transition-colors border border-blue-200">
+                            Ver PDF
+                        </button>
+                    </td>
+                `;
+                resultsTableBody.appendChild(tr);
+            });
+        }
+
+        // --- PDF Viewer Logic ---
+        window.openPdfViewer = function(recordId) {
+            const record = uploadedResults.find(r => r.id === recordId);
+            if (!record) return;
+
+            pdfTitle.textContent = `${record.studyName} - ${record.date}`;
+            const drivePreviewUrl = `https://drive.google.com/file/d/${record.driveFileId}/preview`;
+
+            pdfEmbedContainer.innerHTML = `
+                <iframe src="${drivePreviewUrl}" width="100%" height="100%" style="border: none;" allow="autoplay"></iframe>
+            `;
+
+            switchView('pdfViewer');
+        };
+
+        btnClosePdf.addEventListener('click', () => {
+            pdfEmbedContainer.innerHTML = '';
+            switchView('patientResults');
+        });
+
+        // --- Gemini AI Assistant Logic ---
+        const apiKey = ""; 
+        const geminiModal = document.getElementById('gemini-modal');
+        const geminiModalTitle = document.getElementById('gemini-modal-title');
+        const geminiModalContent = document.getElementById('gemini-modal-content');
+        const btnCloseGemini = document.getElementById('btn-close-gemini');
+
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+            }
+        }
+
+        async function getStudyExplanation(studyName) {
+            if (!apiKey) return "La clave de la API de Gemini no está configurada, pero aquí se mostraría una explicación generada por IA.";
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const prompt = `Eres un asistente médico amigable y de confianza. Explica de forma muy sencilla, breve (máximo 2 párrafos cortos) y en lenguaje no técnico para un paciente que acaba de realizarse estudios en "SAZ Laboratorio de Análisis", qué es un estudio médico de "${studyName}" y para qué sirve en general. Finaliza el mensaje recordando siempre con amabilidad que los resultados finales deben ser interpretados por su médico tratante. Redacta en texto plano, sin usar negritas fuertes ni marcadores complejos.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const data = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar la explicación en este momento.";
+            } catch (error) {
+                return "Hubo un problema al conectar con el asistente médico. Por favor, intenta de nuevo más tarde.";
+            }
+        }
+
+        window.explainStudy = async function(studyName) {
+            geminiModal.classList.remove('hidden');
+            geminiModalTitle.textContent = `Sobre el estudio: ${studyName}`;
+            geminiModalContent.innerHTML = '<div class="flex items-center text-purple-600"><svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Consultando al asistente inteligente de SAZ...</div>';
+            
+            const explanation = await getStudyExplanation(studyName);
+            geminiModalContent.innerHTML = explanation.replace(/\n/g, '<br>');
+        };
+
+        btnCloseGemini.addEventListener('click', () => {
+            geminiModal.classList.add('hidden');
+        });
+
+        // Initialize view
+        switchView('patientSearch');
+    </script>
+</body>
+</html>
