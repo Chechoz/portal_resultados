@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="SAZ Portal">
     <link rel="apple-touch-icon" href="saz.jpg">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#2563EB"> <!-- Azul de la marca -->
+    <meta name="theme-color" content="#2563EB">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Incluimos PDF.js para poder leer y extraer texto directamente desde los PDFs -->
@@ -31,19 +31,16 @@
         }
     </style>
 </head>
-<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+<body class="text-gray-800 antialiased min-h-screen flex flex-col relative pb-20 sm:pb-0">
 
-    <!-- Navbar / Barra de Navegación -->
     <nav class="bg-blue-600 text-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex-shrink-0 flex items-center">
-                    <!-- Logo del laboratorio -->
                     <img src="saz.jpg" alt="Logo SAZ Laboratorio" class="h-12 w-auto mr-3 bg-white rounded px-1 py-0.5" onerror="this.onerror=null; this.src='https://placehold.co/150x50/white/red?text=SAZ';">
                     <span class="font-bold text-xl tracking-tight hidden sm:block">Portal de Resultados</span>
                 </div>
                 <div class="flex items-center space-x-2 sm:space-x-4">
-                    <!-- Botón para instalar PWA (Se muestra si el navegador lo permite) -->
                     <button id="btn-install-pwa" class="hidden bg-green-500 hover:bg-green-600 text-white px-2.5 py-1.5 rounded-md text-xs font-semibold flex items-center transition-colors shadow-sm animate-bounce">
                         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -51,7 +48,6 @@
                         Instalar App
                     </button>
 
-                    <!-- Estado de conexión híbrido -->
                     <span id="cloud-status" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-800 text-blue-100">
                         <span class="h-2 w-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse" id="status-dot"></span>
                         <span id="status-text">Conectando...</span>
@@ -63,10 +59,8 @@
         </div>
     </nav>
 
-    <!-- Área de Contenido Principal -->
     <main class="flex-grow flex items-center justify-center p-4">
         
-        <!-- VISTA: Búsqueda del Paciente -->
         <div id="view-patient-search" class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 fade-in block">
             <div class="text-center mb-6">
                 <h2 class="text-2xl font-bold text-gray-900">Buscar Resultados</h2>
@@ -82,7 +76,6 @@
                 </button>
             </form>
             
-            <!-- Indicación de instalación nativa móvil para iOS -->
             <div id="ios-install-instructions" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
                 <p class="font-bold flex items-center mb-1">
                     <span class="text-base mr-1.5">📲</span> Instala esta App en tu iPhone:
@@ -95,7 +88,6 @@
             </div>
         </div>
 
-        <!-- VISTA: Lista de Resultados del Paciente -->
         <div id="view-patient-results" class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 fade-in hidden">
             <div class="flex justify-between items-center mb-6 border-b pb-4">
                 <div>
@@ -120,8 +112,7 @@
                         </tr>
                     </thead>
                     <tbody id="results-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- Filas cargadas dinámicamente -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
             <div id="no-results-msg" class="text-center py-8 text-gray-500 hidden">
@@ -129,7 +120,6 @@
             </div>
         </div>
 
-        <!-- VISTA: Visor de PDF (Google Drive) -->
         <div id="view-pdf-viewer" class="w-full max-w-5xl bg-white rounded-xl shadow-lg p-6 fade-in hidden h-[85vh] flex flex-col">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-gray-900" id="pdf-title">Visor de Resultados</h3>
@@ -140,11 +130,9 @@
                 </div>
             </div>
             <div class="flex-grow border rounded-md overflow-hidden bg-gray-100 relative" id="pdf-embed-container">
-                <!-- El iframe del documento de Drive se insertará aquí -->
-            </div>
+                </div>
         </div>
 
-        <!-- VISTA: Panel de Administración -->
         <div id="view-admin" class="w-full max-w-2xl bg-white rounded-xl shadow-lg p-8 fade-in hidden">
             <div class="flex justify-between items-center border-b pb-4 mb-6">
                 <div>
@@ -156,7 +144,6 @@
                 </button>
             </div>
 
-            <!-- Alerta de advertencia de Base de Datos para Diagnóstico -->
             <div id="db-warning" class="mb-6 hidden"></div>
             
             <form id="form-upload-result" class="space-y-6">
@@ -174,7 +161,7 @@
                 <div>
                     <label for="admin-drive-url" class="block text-sm font-medium text-gray-700">Enlace de Google Drive del PDF</label>
                     <input type="url" id="admin-drive-url" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="https://drive.google.com/file/d/.../view?usp=sharing">
-                    <p class="text-xs text-gray-500 mt-1">Asegúrate de que el archivo en Drive esté configurado como público: "Cualquier persona con el enlace puede ver".</p>
+                    <p class="text-xs text-gray-500 mt-1">Asegúrate de que el archivo en Drive esté configurado como público.</p>
                 </div>
 
                 <div class="pt-4 border-t border-gray-200 flex justify-end">
@@ -188,13 +175,12 @@
                 <span class="block sm:inline" id="upload-success-text">Archivo cargado exitosamente.</span>
             </div>
 
-            <!-- SECCIÓN: Configuración de Inteligencia Artificial (Gemini) -->
             <div class="mt-8 pt-6 border-t bg-purple-50 p-4 rounded-lg border border-purple-100">
                 <h3 class="text-md font-semibold text-purple-900 mb-2 flex items-center">
                     <span class="mr-2">✨</span> Configuración del Asistente de IA (Opcional)
                 </h3>
                 <p class="text-xs text-purple-700 mb-3">
-                    Para que tus pacientes puedan usar el botón "De qué trata" desde sus teléfonos, introduce una Clave API de Gemini. Es gratuita y mantendrá la IA activa.
+                    Introduce una Clave API de Gemini para habilitar la lectura automática de reportes.
                 </p>
                 <div class="flex space-x-2">
                     <input type="password" id="admin-gemini-key" class="flex-grow px-3 py-1.5 text-sm border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Pega tu clave API de Gemini aquí">
@@ -205,16 +191,12 @@
                 <p id="gemini-key-status" class="text-xs text-green-600 mt-1.5 hidden">✓ Clave guardada correctamente en este navegador.</p>
             </div>
             
-            <!-- Listado para borrar registros uno a uno -->
             <div class="mt-8 pt-6 border-t">
                 <h3 class="text-lg font-medium text-gray-900 mb-3" id="admin-list-title">Registros</h3>
-                <div class="max-h-60 overflow-y-auto border rounded-md p-2 bg-gray-50" id="admin-records-list">
-                    <!-- Se llena automáticamente -->
-                </div>
+                <div class="max-h-60 overflow-y-auto border rounded-md p-2 bg-gray-50" id="admin-records-list"></div>
             </div>
         </div>
 
-        <!-- MODAL: Control de Acceso por Contraseña a Admin -->
         <div id="admin-login-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-center justify-center">
             <div class="relative mx-auto p-5 border w-11/12 max-w-sm shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
@@ -240,7 +222,6 @@
             </div>
         </div>
 
-        <!-- MODAL: Explicación de IA con Gemini -->
         <div id="gemini-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-center justify-center">
             <div class="relative mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
                 <div class="mt-3">
@@ -262,7 +243,6 @@
             </div>
         </div>
 
-        <!-- MODAL: Confirmación de Borrado de Registro -->
         <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-center justify-center">
             <div class="relative mx-auto p-5 border w-11/12 max-w-sm shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
@@ -290,19 +270,37 @@
 
     </main>
 
-    <!-- Firebase SDK v11 -->
+    <a href="https://wa.me/5493468529961" target="_blank" rel="noopener noreferrer" class="fixed bottom-5 right-5 z-50 bg-[#25D366] hover:bg-[#20ba5a] text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 group" title="Contactar por WhatsApp">
+        <svg class="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.713-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.743 1.451 5.436 0 9.86-4.413 9.863-9.847.002-2.633-1.019-5.101-2.877-6.96C16.516 1.94 14.045.92 11.413.92c-5.44 0-9.866 4.414-9.87 9.848-.002 2.01.534 3.974 1.554 5.733l-.103.164-1.01 3.69 3.78-.992.163.097c1.714.1.341 1.42 4.73 1.42zM17.65 14.3c-.31-.16-.1.84-1.845-.945-.315-.16-.54-.24-.774.115-.233.355-.902 1.135-1.104 1.365-.203.23-.406.26-.715.1-.31-.16-1.307-.482-2.49-1.537-.917-.818-1.536-1.83-1.716-2.137-.18-.307-.018-.472.137-.626.14-.138.31-.355.464-.533.155-.178.207-.306.31-.512.104-.205.052-.385-.026-.54-.077-.154-.774-1.865-1.06-2.55-.278-.67-.562-.58-.774-.59-.2-.01-.43-.01-.662-.01-.232 0-.61.087-.93.435-.318.348-1.22 1.194-1.22 2.91 0 1.717 1.248 3.376 1.422 3.607.174.23 2.456 3.75 5.95 5.257.83.358 1.48.572 1.984.733.834.264 1.593.227 2.193.138.67-.1 2.064-.844 2.353-1.66.29-.816.29-1.517.203-1.663-.088-.147-.32-.24-.63-.4z"/>
+        </svg>
+        <span class="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 ease-in-out text-sm font-medium whitespace-nowrap">
+            ¿Necesitás ayuda?
+        </span>
+    </a>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIGURAMOS EL WORKER DE PDF.JS PARA EXTRAER EL TEXTO DE FORMA INTERNA
+        // Configuración interna de PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        // CONTRASEÑA PARA ADMINISTRACIÓN
-        const ADMIN_PIN = "999666";
+        // AJUSTE DE SEGURIDAD: Hash SHA-256 de la contraseña cifrada.
+        // De esta forma la contraseña real NO queda expuesta en texto plano al mirar el código fuente.
+        const ADMIN_PIN_HASH = "8ced598e0b6df4b0ecf62d1c6df3d132a2434863f698d27771746f3630f9191d";
 
-        // Credenciales oficiales de Firebase provistas por el usuario
+        // Función nativa del navegador para procesar hashes SHA-256 de forma segura
+        async function verifyPin(input) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(input);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex === ADMIN_PIN_HASH;
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyBiGf4YF1LnWEAJlNujGeZZNMQqHmpxh0k",
             authDomain: "saz-laboratorio.firebaseapp.com",
@@ -316,8 +314,6 @@
         let auth = null;
         let db = null;
         let useFirebase = false;
-        
-        // Identificador exclusivo para las rutas de datos seguras de la aplicación (Regla 1)
         const appId = 'saz-laboratorio'; 
 
         try {
@@ -326,14 +322,13 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
                 useFirebase = true;
-                console.log("Firebase oficial conectado correctamente.");
             }
         } catch (error) {
             console.error("Error al inicializar Firebase SDK:", error);
             useFirebase = false;
         }
 
-        // --- State (Memoria del Navegador) ---
+        // --- State ---
         let uploadedResults = [];
         let currentPatientId = null;
         let recordToDeleteId = null;
@@ -354,7 +349,6 @@
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
 
-        // Admin Security
         const adminLoginModal = document.getElementById('admin-login-modal');
         const adminPinInput = document.getElementById('admin-pin-input');
         const adminLoginError = document.getElementById('admin-login-error');
@@ -362,7 +356,6 @@
         const btnConfirmAdminLogin = document.getElementById('btn-confirm-admin-login');
         const btnLogoutAdmin = document.getElementById('btn-logout-admin');
 
-        // Forms
         const formPatientSearch = document.getElementById('form-patient-search');
         const inputPatientId = document.getElementById('patient-id-input');
         const searchError = document.getElementById('search-error');
@@ -374,34 +367,28 @@
         const adminRecordsList = document.getElementById('admin-records-list');
         const adminListTitle = document.getElementById('admin-list-title');
 
-        // Delete Modal
         const deleteConfirmModal = document.getElementById('delete-confirm-modal');
         const deleteRecordDetails = document.getElementById('delete-record-details');
         const btnCancelDelete = document.getElementById('btn-cancel-delete');
         const btnConfirmDelete = document.getElementById('btn-confirm-delete');
 
-        // Results Table
         const resultsPatientIdText = document.getElementById('results-patient-id');
         const resultsTableBody = document.getElementById('results-table-body');
         const noResultsMsg = document.getElementById('no-results-msg');
         const btnBackToSearch = document.getElementById('btn-back-to-search');
 
-        // PDF Visor
         const pdfEmbedContainer = document.getElementById('pdf-embed-container');
         const pdfTitle = document.getElementById('pdf-title');
         const btnClosePdf = document.getElementById('btn-close-pdf');
 
-        // --- Gestión de Autenticación y Conectividad Híbrida ---
         const initAuthAndStatus = async () => {
             if (useFirebase && auth && db) {
                 try {
                     statusText.textContent = "Conectando...";
                     statusDot.className = "h-2 w-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse";
                     
-                    // 1. Autenticar primero (Regla 3)
                     await signInAnonymously(auth);
                     
-                    // 2. Escuchar el estado de autenticación (Regla 3)
                     onAuthStateChanged(auth, (user) => {
                         currentUser = user;
                         if (user) {
@@ -409,7 +396,6 @@
                             statusDot.className = "h-2 w-2 rounded-full bg-green-400 mr-1.5";
                             adminListTitle.textContent = "Resultados en la Nube de Google (Permanente)";
                             
-                            // Ocultar la advertencia si se logra conectar
                             const dbWarning = document.getElementById('db-warning');
                             if (dbWarning) dbWarning.classList.add('hidden');
                             
@@ -420,11 +406,7 @@
                     });
                 } catch (error) {
                     console.error("Error al autenticar en Firebase:", error);
-                    let friendlyError = error.message;
-                    if (error.code === 'auth/operation-not-allowed') {
-                        friendlyError = "El proveedor de acceso 'Anónimo' está desactivado en Firebase. Debes habilitarlo en tu Consola Firebase para que los datos queden grabados permanentemente.";
-                    }
-                    setOfflineMode(friendlyError);
+                    setOfflineMode(error.message);
                 }
             } else {
                 setOfflineMode("Falta configurar o inicializar las credenciales de Firebase.");
@@ -447,14 +429,8 @@
                                 <span class="text-lg mr-2">⚠️</span> Conectado en Modo de Emergencia Local
                             </div>
                             <p class="text-xs text-yellow-700">
-                                Los estudios que cargues se guardarán temporalmente en esta pestaña, pero <strong>se borrarán si recargas la página o cierras el navegador</strong>.
+                                Los estudios se guardarán temporalmente, se borrarán si recargas la página.
                             </p>
-                            <p class="text-xs text-red-600 mt-2 font-semibold bg-red-50 p-2 rounded border border-red-100">
-                                Causa del problema: ${errorMessage}
-                            </p>
-                            <a href="https://console.firebase.google.com/" target="_blank" class="inline-block mt-3 text-xs bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-3 py-1.5 rounded transition-colors shadow-sm">
-                                Abrir Consola de Firebase y Activar "Anónimo"
-                            </a>
                         </div>
                     `;
                     dbWarning.classList.remove('hidden');
@@ -465,11 +441,9 @@
             updateAdminRecordsView();
         }
 
-        // --- Sincronización con Firestore ---
         function setupFirestoreSync() {
             if (!useFirebase || !db || !currentUser) return;
 
-            // Ruta estricta de base de datos requerida (Regla 1)
             const resultsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'results');
             
             onSnapshot(resultsCollectionRef, (snapshot) => {
@@ -478,7 +452,6 @@
                     uploadedResults.push({ id: doc.id, ...doc.data() });
                 });
                 
-                // Ordenamos en memoria para evitar índices complejos (Regla 2)
                 uploadedResults.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
                 updateAdminRecordsView();
@@ -487,12 +460,10 @@
                     renderPatientResults(patientRecords);
                 }
             }, (error) => {
-                console.error("Error de conexión Firebase:", error);
                 setOfflineMode(error.message);
             });
         }
 
-        // --- Lógica de Navegación de Vistas ---
         function switchView(viewName) {
             Object.values(views).forEach(v => {
                 v.classList.remove('block', 'flex');
@@ -520,8 +491,6 @@
             }
         }
 
-        // --- ASIGNACIÓN DE EVENTOS ---
-
         navPatient.addEventListener('click', () => {
             switchView('patientSearch');
             inputPatientId.value = '';
@@ -542,14 +511,15 @@
             }
         });
 
-        function handleAdminLogin() {
-            if (adminPinInput.value === ADMIN_PIN) {
+        // Verificación asíncrona y segura usando Hashing criptográfico
+        async function handleAdminLogin() {
+            const isValid = await verifyPin(adminPinInput.value);
+            if (isValid) {
                 isAdminAuthenticated = true;
                 adminLoginModal.classList.add('hidden');
                 switchView('admin');
                 updateAdminRecordsView();
                 uploadSuccess.classList.add('hidden');
-                // Cargar clave de Gemini guardada
                 const savedKey = localStorage.getItem('gemini_api_key') || "";
                 document.getElementById('admin-gemini-key').value = savedKey;
             } else {
@@ -578,7 +548,6 @@
             currentPatientId = null;
         });
 
-        // --- Lógica para guardar la clave de Gemini ---
         const btnSaveGeminiKey = document.getElementById('btn-save-gemini-key');
         const adminGeminiInput = document.getElementById('admin-gemini-key');
         const geminiKeyStatus = document.getElementById('gemini-key-status');
@@ -590,14 +559,11 @@
             setTimeout(() => geminiKeyStatus.classList.add('hidden'), 3000);
         });
 
-        // --- Registro y Vinculación de Enlaces de Google Drive ---
         function extractDriveFileId(url) {
             const match1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
             if (match1) return match1[1];
-            
             const match2 = url.match(/id=([a-zA-Z0-9_-]+)/);
             if (match2) return match2[1];
-            
             return null;
         }
 
@@ -628,14 +594,12 @@
 
             if (useFirebase && db && currentUser) {
                 try {
-                    // Guardado seguro y permanente en Firestore
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'results', recordId), newRecord);
                     uploadSuccessText.textContent = "Estudio vinculado y guardado permanentemente en la nube.";
                     uploadSuccess.classList.remove('hidden');
                     setTimeout(() => uploadSuccess.classList.add('hidden'), 3000);
                     formUpload.reset();
                 } catch (error) {
-                    console.error("Error al guardar en la nube, usando modo local de respaldo:", error);
                     saveRecordLocally(recordId, newRecord);
                 }
             } else {
@@ -654,7 +618,6 @@
             updateAdminRecordsView();
         }
 
-        // --- Borrado Seguro de un Registro ---
         const openDeleteConfirm = function(recordId) {
             const record = uploadedResults.find(r => r.id === recordId);
             if (!record) return;
@@ -673,12 +636,10 @@
             if (recordToDeleteId) {
                 if (useFirebase && db && currentUser) {
                     try {
-                        // Borrado atómico de la nube
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'results', recordToDeleteId));
                         deleteConfirmModal.classList.add('hidden');
                         recordToDeleteId = null;
                     } catch (error) {
-                        console.error("Error al borrar de Firestore, reintentando de forma local:", error);
                         deleteRecordLocally(recordToDeleteId);
                     }
                 } else {
@@ -716,7 +677,7 @@
                         <span class="font-medium text-gray-800">DNI: ${record.patientId}</span>
                         <span class="text-xs text-gray-500">${record.studyName} (${record.date})</span>
                     </div>
-                    <button onclick="openDeleteConfirm('${record.id}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-colors" title="Eliminar registro">
+                    <button onclick="openDeleteConfirm('${record.id}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-colors">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -727,11 +688,9 @@
             adminRecordsList.appendChild(ul);
         }
 
-        // --- Búsqueda y Resultados (Paciente) ---
         formPatientSearch.addEventListener('submit', function(e) {
             e.preventDefault();
             const searchId = inputPatientId.value.trim();
-            
             if (!searchId) return;
 
             const patientRecords = uploadedResults.filter(record => record.patientId === searchId);
@@ -746,6 +705,7 @@
             }
         });
 
+        // AJUSTE DE DISEÑO MOBILE-FIRST: Inversión de botones para priorizar "Ver PDF"
         function renderPatientResults(records) {
             resultsPatientIdText.textContent = `DNI / ID: ${currentPatientId}`;
             resultsTableBody.innerHTML = '';
@@ -765,22 +725,24 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm font-medium text-gray-900">${record.studyName}</div>
-                        <div class="text-xs text-gray-500 text-blue-500 font-medium">Google Drive</div>
+                        <div class="text-xs text-gray-400 font-medium">Google Drive</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                        <button onclick="explainStudy('${record.id}')" class="text-purple-600 hover:text-purple-900 bg-purple-50 px-3 py-1 rounded-md hover:bg-purple-100 transition-colors border border-purple-200" title="Explicación con IA">
-                            ✨ ¿De qué trata?
-                        </button>
-                        <button onclick="openPdfViewer('${record.id}')" class="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded-md hover:bg-blue-100 transition-colors border border-blue-200">
-                            Ver PDF
-                        </button>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <!-- Contenedor flex dinámico: En móviles se apilan verticalmente poniendo primero Ver PDF -->
+                        <div class="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-2">
+                            <button onclick="openPdfViewer('${record.id}')" class="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-2 sm:py-1 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 order-1 sm:order-1 text-center">
+                                Ver PDF
+                            </button>
+                            <button onclick="explainStudy('${record.id}')" class="text-purple-600 hover:text-purple-900 bg-purple-50 px-3 py-2 sm:py-1 rounded-md hover:bg-purple-100 transition-colors border border-purple-200 order-2 sm:order-2 text-center" title="Explicación con IA">
+                                ✨ ¿De qué trata?
+                            </button>
+                        </div>
                     </td>
                 `;
                 resultsTableBody.appendChild(tr);
             });
         }
 
-        // --- Visor de PDF ---
         const openPdfViewer = function(recordId) {
             const record = uploadedResults.find(r => r.id === recordId);
             if (!record) return;
@@ -800,12 +762,6 @@
             switchView('patientResults');
         });
 
-        // --- Asistente Médico Inteligente (Gemini API) con Lector de PDF ---
-        const geminiModal = document.getElementById('gemini-modal');
-        const geminiModalTitle = document.getElementById('gemini-modal-title');
-        const geminiModalContent = document.getElementById('gemini-modal-content');
-        const btnCloseGemini = document.getElementById('btn-close-gemini');
-
         async function fetchWithRetry(url, options, maxRetries = 5) {
             const delays = [1000, 2000, 4000, 8000, 16000];
             for (let i = 0; i < maxRetries; i++) {
@@ -820,22 +776,17 @@
             }
         }
 
-        // EXTRAE EL TEXTO DE FORMA INTERNA DESDE GOOGLE DRIVE MEDIANTE PROXY CORS Y PDF.JS
         async function extractTextFromPDF(driveFileId) {
             const downloadUrl = `https://drive.google.com/uc?export=download&id=${driveFileId}`;
-            // allorigins.win es un proxy CORS confiable y gratuito
             const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(downloadUrl)}`;
             
             const response = await fetch(proxyUrl);
-            if (!response.ok) {
-                throw new Error("No se pudo descargar el archivo de Drive. Verifica que sea un archivo accesible públicamente.");
-            }
+            if (!response.ok) throw new Error("No se pudo descargar el archivo.");
             
             const arrayBuffer = await response.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             let fullText = "";
             
-            // Leemos un límite máximo de 3 páginas para evitar sobrecarga y costos de API
             const maxPages = Math.min(pdf.numPages, 3);
             for (let i = 1; i <= maxPages; i++) {
                 const page = await pdf.getPage(i);
@@ -848,10 +799,8 @@
 
         async function getStudyExplanation(record) {
             const activeApiKey = localStorage.getItem('gemini_api_key') || "";
-            
             if (!activeApiKey) {
-                return "<strong>El Asistente Médico de Inteligencia Artificial de SAZ no está configurado actualmente.</strong><br><br>" +
-                       "Para activar las explicaciones automáticas, el administrador del laboratorio debe ingresar su clave gratuita de Gemini en el <strong>Panel de Administración</strong>.";
+                return "<strong>El Asistente de IA no está configurado.</strong><br><br>Por favor introduce la clave en el panel de control.";
             }
 
             let pdfContentText = "";
@@ -859,39 +808,20 @@
             let downloadErrorMsg = "";
 
             try {
-                // Intentar descargar y extraer el texto directamente de Google Drive
                 pdfContentText = await extractTextFromPDF(record.driveFileId);
-                if (!pdfContentText || pdfContentText.length < 10) {
-                    throw new Error("El archivo PDF parece ser una imagen o no contiene texto editable.");
-                }
+                if (!pdfContentText || pdfContentText.length < 10) throw new Error("Sin texto.");
             } catch (error) {
-                console.warn("Fallo al extraer texto de PDF, usando explicación basada en título:", error);
                 usingFallback = true;
                 downloadErrorMsg = error.message;
             }
             
-            // Usamos el endpoint estable y de producción oficial para la API de Gemini 2.5 Flash
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeApiKey}`;
-            
             let prompt = "";
+            
             if (!usingFallback) {
-                // Prompt ideal: analizando el contenido real del documento
-                prompt = `Eres un asistente médico amigable, empático y de confianza de "SAZ Laboratorio de Análisis". 
-A continuación te proporciono el texto real extraído de los resultados del paciente del estudio "${record.studyName}":
-
-[INICIO DEL REPORTE DEL PDF]
-${pdfContentText}
-[FIN DEL REPORTE DEL PDF]
-
-Por favor, analiza de forma resumida y amigable estos resultados médicos. Explica qué significan los parámetros principales detectados en palabras simples (máximo 3 párrafos cortos). 
-Si detectas valores con asteriscos, signos de alerta o valores fuera de rango de referencia, menciónalos de manera muy sutil y sin alarmar, aclarando siempre de forma muy empática que los resultados deben ser interpretados clínicamente por su médico de cabecera para el diagnóstico definitivo. Redacta en texto plano, sin negritas fuertes ni caracteres de marcado complejos.`;
+                prompt = `Eres un asistente médico amigable y empático de "SAZ Laboratorio de Análisis". Analiza este texto de estudio "${record.studyName}":\n\n${pdfContentText}\n\nExplica de manera sencilla qué mide el examen en un máximo de 3 párrafos cortos. Si notas valores alterados sé sutil, no alarmes, y recalca que el médico de cabecera debe realizar el diagnóstico clínico definitivo. Usa texto plano sin asteriscos ni negritas.`;
             } else {
-                // Prompt de respaldo: Explicar de qué trata de forma genérica
-                prompt = `Eres un asistente médico amigable y de confianza del laboratorio "SAZ Laboratorio de Análisis". 
-Lamentablemente, no pudimos procesar el texto escrito dentro del PDF de resultados (Motivo: ${downloadErrorMsg}).
-
-Por lo tanto, explica de forma muy sencilla, breve (máximo 2 párrafos cortos) y en lenguaje no técnico para el paciente, qué es un estudio médico de "${record.studyName}" en general, para qué sirve habitualmente y qué parámetros suele medir. 
-Finaliza el mensaje recordando siempre con amabilidad que cuando tenga el reporte físico, los resultados definitivos deben ser interpretados por su médico de cabecera. Redacta en texto plano, sin usar negritas fuertes ni marcadores complejos.`;
+                prompt = `Eres un asistente médico amigable de "SAZ Laboratorio de Análisis". Explica brevemente en un máximo de 2 párrafos qué es un estudio de "${record.studyName}" en general, para qué sirve y qué parámetros comunes evalúa. Finaliza recordando de forma empática que el informe debe ser interpretado por su médico. Usa texto plano sin asteriscos ni negritas.`;
             }
 
             const payload = {
@@ -904,28 +834,21 @@ Finaliza el mensaje recordando siempre con amabilidad que cuando tenga el report
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
-                if (data.error) {
-                    throw new Error(data.error.message || "Error devuelto por la API de Google.");
-                }
-
-                let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar la explicación en este momento.";
-                
-                // Si usamos la explicación genérica de respaldo, le avisamos al paciente al principio
+                let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No disponible.";
                 if (usingFallback) {
-                    responseText = `<div class="mb-3 p-3 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700 italic">
-                        Nota: No pudimos leer los resultados específicos de tu informe PDF en la nube (puede que sea un escaneo o requiera permisos de red especiales), por lo que te ofrecemos una guía informativa sobre qué trata este estudio en general:
-                    </div>` + responseText;
+                    responseText = `<div class="mb-3 p-3 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700 italic">Guía informativa general sobre este tipo de estudio:</div>` + responseText;
                 }
-
                 return responseText;
             } catch (error) {
-                console.error("Error detallado al consultar Gemini:", error);
-                return `<strong>Hubo un problema al conectar con el asistente de IA de Google.</strong><br><br>` +
-                       `<em>Detalle del error:</em> ${error.message}<br><br>` +
-                       `Por favor, verifica que la clave de API sea válida y no tenga limitaciones de cuota en tu región.`;
+                return `Error al conectar con el asistente de IA.`;
             }
         }
+
+        // --- Asistente Médico Inteligente (Gemini API) con Lector de PDF ---
+        const geminiModal = document.getElementById('gemini-modal');
+        const geminiModalTitle = document.getElementById('gemini-modal-title');
+        const geminiModalContent = document.getElementById('gemini-modal-content');
+        const btnCloseGemini = document.getElementById('btn-close-gemini');
 
         const explainStudy = async function(recordId) {
             const record = uploadedResults.find(r => r.id === recordId);
@@ -939,10 +862,9 @@ Finaliza el mensaje recordando siempre con amabilidad que cuando tenga el report
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span class="text-sm font-medium animate-pulse">Descargando y analizando reporte PDF con Inteligencia Artificial...</span>
+                    <span class="text-sm font-medium animate-pulse">Analizando reporte PDF con Inteligencia Artificial...</span>
                 </div>
             `;
-            
             const explanation = await getStudyExplanation(record);
             geminiModalContent.innerHTML = explanation.replace(/\n/g, '<br>');
         };
@@ -951,12 +873,10 @@ Finaliza el mensaje recordando siempre con amabilidad que cuando tenga el report
             geminiModal.classList.add('hidden');
         });
 
-        // Exponer explícitamente las funciones al contexto global window
         window.explainStudy = explainStudy;
         window.openPdfViewer = openPdfViewer;
         window.openDeleteConfirm = openDeleteConfirm;
 
-        // Cargar arranque asíncrono
         initAuthAndStatus();
     </script>
 </body>
