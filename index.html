@@ -1,4 +1,4 @@
-DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -156,6 +156,23 @@ DOCTYPE html>
             <div id="upload-success" class="mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative hidden" role="alert">
                 <span class="block sm:inline" id="upload-success-text">Archivo cargado exitosamente.</span>
             </div>
+
+            <!-- NUEVA SECCIÓN: Configuración de Inteligencia Artificial (Gemini) -->
+            <div class="mt-8 pt-6 border-t bg-purple-50 p-4 rounded-lg border border-purple-100">
+                <h3 class="text-md font-semibold text-purple-900 mb-2 flex items-center">
+                    <span class="mr-2">✨</span> Configuración del Asistente de IA (Opcional)
+                </h3>
+                <p class="text-xs text-purple-700 mb-3">
+                    Para que tus pacientes puedan usar el botón "De qué trata" desde sus teléfonos, introduce una Clave API de Gemini. Es gratuita y mantendrá la IA activa.
+                </p>
+                <div class="flex space-x-2">
+                    <input type="password" id="admin-gemini-key" class="flex-grow px-3 py-1.5 text-sm border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Pega tu clave API de Gemini aquí">
+                    <button id="btn-save-gemini-key" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
+                        Guardar Clave
+                    </button>
+                </div>
+                <p id="gemini-key-status" class="text-xs text-green-600 mt-1.5 hidden">✓ Clave guardada correctamente en este navegador.</p>
+            </div>
             
             <!-- Listado para borrar registros uno a uno -->
             <div class="mt-8 pt-6 border-t">
@@ -203,7 +220,7 @@ DOCTYPE html>
                         <h3 class="text-lg leading-6 font-medium text-gray-900 ml-4" id="gemini-modal-title">¿Qué es este estudio?</h3>
                     </div>
                     <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-700" id="gemini-modal-content">Generando explicación por la IA...</p>
+                        <p class="text-sm text-gray-700 leading-relaxed" id="gemini-modal-content">Generando explicación por la IA...</p>
                     </div>
                     <div class="items-center px-4 py-3 mt-4 text-center sm:px-6 sm:flex sm:flex-row-reverse border-t">
                         <button id="btn-close-gemini" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 sm:ml-3 sm:w-auto sm:text-sm">
@@ -245,34 +262,37 @@ DOCTYPE html>
     <!-- Firebase SDK v11 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // CONTRASEÑA PARA ADMINISTRACIÓN
         const ADMIN_PIN = "1234";
 
-        // --- Habilitar Lógica de Fallback Automático en Firebase ---
+        // Credenciales oficiales de Firebase provistas por el usuario
+        const firebaseConfig = {
+            apiKey: "AIzaSyBiGf4YF1LnWEAJlNujGeZZNMQqHmpxh0k",
+            authDomain: "saz-laboratorio.firebaseapp.com",
+            projectId: "saz-laboratorio",
+            storageBucket: "saz-laboratorio.firebasestorage.app",
+            messagingSenderId: "569034334679",
+            appId: "1:569034334679:web:e908c1671636a7c8a46b92"
+        };
+
         let app = null;
         let auth = null;
         let db = null;
         let useFirebase = false;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'saz-portal-resultados';
+        
+        // Identificador exclusivo para las rutas de datos seguras de la aplicación (Regla 1)
+        const appId = 'saz-laboratorio'; 
 
         try {
-            // Evaluamos si las credenciales de entorno de Firebase están realmente disponibles e inicializadas
-            const firebaseConfig = typeof __firebase_config !== 'undefined'
-                ? JSON.parse(__firebase_config)
-                : null;
-
-            // Para prevenir caídas de script, solo iniciamos Firebase si hay una API Key real y válida
-            if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "") {
+            if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "") {
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
                 useFirebase = true;
-                console.log("Firebase inicializado correctamente.");
-            } else {
-                console.warn("No se detectó configuración activa de Firebase. Iniciando en Modo de Demostración Local de forma segura.");
+                console.log("Firebase oficial conectado correctamente.");
             }
         } catch (error) {
             console.error("Error al inicializar Firebase SDK:", error);
@@ -337,17 +357,14 @@ DOCTYPE html>
         const pdfTitle = document.getElementById('pdf-title');
         const btnClosePdf = document.getElementById('btn-close-pdf');
 
-        // --- Gestión de Autenticación y Conectividad Híbrida ---
+        // --- Autenticación y Sincronización Segura ---
         if (useFirebase && auth && db) {
             const initAuth = async () => {
                 try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    // Autenticamos primero antes de hacer consultas de acuerdo a la Regla 3
+                    await signInAnonymously(auth);
                 } catch (error) {
-                    console.error("Error al autenticar de forma segura:", error);
+                    console.error("Error al autenticar en segundo plano:", error);
                     setOfflineMode();
                 }
             };
@@ -357,7 +374,7 @@ DOCTYPE html>
                 if (user) {
                     statusText.textContent = "Conectado 🟢";
                     statusDot.className = "h-2 w-2 rounded-full bg-green-400 mr-1.5";
-                    adminListTitle.textContent = "Registros en la Base de Datos (Nube)";
+                    adminListTitle.textContent = "Resultados en la Nube de Google (Permanente)";
                     setupFirestoreSync();
                 } else {
                     statusText.textContent = "Conectando...";
@@ -366,7 +383,6 @@ DOCTYPE html>
                 }
             });
         } else {
-            // Fallback manual si Firebase no está activo
             setOfflineMode();
         }
 
@@ -383,13 +399,16 @@ DOCTYPE html>
         function setupFirestoreSync() {
             if (!useFirebase || !db || !currentUser) return;
 
+            // Ruta estricta de base de datos requerida (Regla 1)
             const resultsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'results');
+            
             onSnapshot(resultsCollectionRef, (snapshot) => {
                 uploadedResults = [];
                 snapshot.forEach((doc) => {
                     uploadedResults.push({ id: doc.id, ...doc.data() });
                 });
                 
+                // Ordenamos en memoria para evitar índices complejos (Regla 2)
                 uploadedResults.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
                 updateAdminRecordsView();
@@ -431,7 +450,7 @@ DOCTYPE html>
             }
         }
 
-        // --- ASIGNACIÓN DE EVENTOS (Garantizado siempre, no se bloquea) ---
+        // --- ASIGNACIÓN DE EVENTOS ---
 
         navPatient.addEventListener('click', () => {
             switchView('patientSearch');
@@ -460,6 +479,9 @@ DOCTYPE html>
                 switchView('admin');
                 updateAdminRecordsView();
                 uploadSuccess.classList.add('hidden');
+                // Cargar clave de Gemini guardada
+                const savedKey = localStorage.getItem('gemini_api_key') || "";
+                document.getElementById('admin-gemini-key').value = savedKey;
             } else {
                 adminLoginError.classList.remove('hidden');
                 adminPinInput.value = '';
@@ -484,6 +506,18 @@ DOCTYPE html>
         btnBackToSearch.addEventListener('click', () => {
             switchView('patientSearch');
             currentPatientId = null;
+        });
+
+        // --- Lógica para guardar la clave de Gemini ---
+        const btnSaveGeminiKey = document.getElementById('btn-save-gemini-key');
+        const adminGeminiInput = document.getElementById('admin-gemini-key');
+        const geminiKeyStatus = document.getElementById('gemini-key-status');
+
+        btnSaveGeminiKey.addEventListener('click', () => {
+            const keyValue = adminGeminiInput.value.trim();
+            localStorage.setItem('gemini_api_key', keyValue);
+            geminiKeyStatus.classList.remove('hidden');
+            setTimeout(() => geminiKeyStatus.classList.add('hidden'), 3000);
         });
 
         // --- Registro y Vinculación de Enlaces de Google Drive ---
@@ -524,8 +558,9 @@ DOCTYPE html>
 
             if (useFirebase && db && currentUser) {
                 try {
+                    // Guardado seguro y permanente en Firestore
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'results', recordId), newRecord);
-                    uploadSuccessText.textContent = "Archivo vinculado exitosamente en la nube.";
+                    uploadSuccessText.textContent = "Estudio vinculado y guardado permanentemente en la nube.";
                     uploadSuccess.classList.remove('hidden');
                     setTimeout(() => uploadSuccess.classList.add('hidden'), 3000);
                     formUpload.reset();
@@ -542,15 +577,15 @@ DOCTYPE html>
             uploadedResults.push({ id, ...record });
             uploadedResults.sort((a, b) => b.createdAt - a.createdAt);
             
-            uploadSuccessText.textContent = "Archivo guardado exitosamente en memoria local temporal.";
+            uploadSuccessText.textContent = "Guardado temporalmente (Sin conexión activa).";
             uploadSuccess.classList.remove('hidden');
-            setTimeout(() => uploadSuccess.classList.add('hidden'), 3000);
+            setTimeout(() => uploadSuccess.classList.add('hidden'), 3500);
             formUpload.reset();
             updateAdminRecordsView();
         }
 
         // --- Borrado Seguro de un Registro ---
-        window.openDeleteConfirm = function(recordId) {
+        const openDeleteConfirm = function(recordId) {
             const record = uploadedResults.find(r => r.id === recordId);
             if (!record) return;
             
@@ -568,6 +603,7 @@ DOCTYPE html>
             if (recordToDeleteId) {
                 if (useFirebase && db && currentUser) {
                     try {
+                        // Borrado atómico de la nube
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'results', recordToDeleteId));
                         deleteConfirmModal.classList.add('hidden');
                         recordToDeleteId = null;
@@ -675,7 +711,7 @@ DOCTYPE html>
         }
 
         // --- Visor de PDF ---
-        window.openPdfViewer = function(recordId) {
+        const openPdfViewer = function(recordId) {
             const record = uploadedResults.find(r => r.id === recordId);
             if (!record) return;
 
@@ -695,7 +731,6 @@ DOCTYPE html>
         });
 
         // --- Asistente Médico Inteligente (Gemini API) ---
-        const apiKey = ""; 
         const geminiModal = document.getElementById('gemini-modal');
         const geminiModalTitle = document.getElementById('gemini-modal-title');
         const geminiModalContent = document.getElementById('gemini-modal-content');
@@ -716,9 +751,15 @@ DOCTYPE html>
         }
 
         async function getStudyExplanation(studyName) {
-            if (!apiKey) return "La clave de la API de Gemini no está configurada, pero aquí se mostraría una explicación generada por IA.";
+            // Evaluamos primero la clave cargada en localStorage por el administrador
+            const activeApiKey = localStorage.getItem('gemini_api_key') || "";
             
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            if (!activeApiKey) {
+                return "<strong>El Asistente Médico de Inteligencia Artificial de SAZ no está configurado actualmente.</strong><br><br>" +
+                       "Para activar las explicaciones automáticas, el administrador del laboratorio debe ingresar su clave gratuita de Gemini en el <strong>Panel de Administración</strong>.";
+            }
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${activeApiKey}`;
             const prompt = `Eres un asistente médico amigable y de confianza del laboratorio "SAZ Laboratorio de Análisis". Explica de forma muy sencilla, breve (máximo 2 párrafos cortos) y en lenguaje no técnico para un paciente que acaba de realizarse estudios, qué es un estudio médico de "${studyName}" y para qué sirve en general. Finaliza el mensaje recordando siempre con amabilidad que los resultados finales deben ser interpretados por su médico de cabecera. Redacta en texto plano, sin usar negritas fuertes ni marcadores complejos.`;
 
             const payload = {
@@ -733,11 +774,12 @@ DOCTYPE html>
                 });
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar la explicación en este momento.";
             } catch (error) {
-                return "Hubo un problema al conectar con el asistente médico de IA. Por favor, intenta de nuevo más tarde.";
+                console.error("Error al consultar Gemini:", error);
+                return "Hubo un problema al conectar con el asistente médico de IA. Por favor, verifica que tu clave de Gemini ingresada en Administración sea válida.";
             }
         }
 
-        window.explainStudy = async function(studyName) {
+        const explainStudy = async function(studyName) {
             geminiModal.classList.remove('hidden');
             geminiModalTitle.textContent = `Sobre el estudio: ${studyName}`;
             geminiModalContent.innerHTML = '<div class="flex items-center text-purple-600"><svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Consultando al asistente inteligente de SAZ...</div>';
@@ -749,6 +791,11 @@ DOCTYPE html>
         btnCloseGemini.addEventListener('click', () => {
             geminiModal.classList.add('hidden');
         });
+
+        // Exponer explícitamente las funciones al contexto global window (Requerido por type="module" para que respondan los onclick)
+        window.explainStudy = explainStudy;
+        window.openPdfViewer = openPdfViewer;
+        window.openDeleteConfirm = openDeleteConfirm;
 
         // Cargar vista inicial
         switchView('patientSearch');
