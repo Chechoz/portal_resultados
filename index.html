@@ -49,8 +49,7 @@
                         Instalar App
                     </button>
 
-                    <span id="cloud-status" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-800 text-blue-100">
-                        <span class="h-2 w-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse" id="status-dot"></span>
+                    <span id="cloud-status" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-800 text-blue-100">
                         <span id="status-text">Conectando...</span>
                     </span>
                     <button id="nav-patient" class="px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium bg-blue-700 hover:bg-blue-800 focus:outline-none">Área Paciente</button>
@@ -403,15 +402,13 @@
             if (useFirebase && auth && db) {
                 try {
                     statusText.textContent = "Conectando...";
-                    statusDot.className = "h-2 w-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse";
                     
                     await signInAnonymously(auth);
                     
                     onAuthStateChanged(auth, (user) => {
                         currentUser = user;
                         if (user) {
-                            statusText.textContent = "Conectado 🟢";
-                            statusDot.className = "h-2 w-2 rounded-full bg-green-400 mr-1.5";
+                            statusText.textContent = "Online ✓";
                             adminListTitle.textContent = "Resultados en la Nube de Google (Permanente)";
                             
                             const dbWarning = document.getElementById('db-warning');
@@ -434,7 +431,7 @@
         function setOfflineMode(errorMessage = "") {
             currentUser = null;
             useFirebase = false;
-            statusText.textContent = "Modo Local 💻";
+            statusText.textContent = "Local 💻";
             statusDot.className = "h-2 w-2 rounded-full bg-blue-400 mr-1.5";
             adminListTitle.textContent = "Registros en Memoria Activa (Local)";
             
