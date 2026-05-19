@@ -287,8 +287,7 @@
         // Configuración interna de PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        // AJUSTE DE SEGURIDAD: Hash SHA-256 de la contraseña cifrada.
-        // De esta forma la contraseña real NO queda expuesta en texto plano al mirar el código fuente.
+        // AJUSTE DE SEGURIDAD: Hash SHA-256 de la contraseña "999666"
         const ADMIN_PIN_HASH = "fa7601f0c2a8f89553f1917540268ec3471026048d4c9f7a6375080e7290539f";
 
         // Función nativa del navegador para procesar hashes SHA-256 de forma segura
@@ -511,7 +510,6 @@
             }
         });
 
-        // Verificación asíncrona y segura usando Hashing criptográfico
         async function handleAdminLogin() {
             const isValid = await verifyPin(adminPinInput.value);
             if (isValid) {
@@ -705,7 +703,6 @@
             }
         });
 
-        // AJUSTE DE DISEÑO MOBILE-FIRST: Inversión de botones para priorizar "Ver PDF"
         function renderPatientResults(records) {
             resultsPatientIdText.textContent = `DNI / ID: ${currentPatientId}`;
             resultsTableBody.innerHTML = '';
@@ -728,7 +725,6 @@
                         <div class="text-xs text-gray-400 font-medium">Google Drive</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <!-- Contenedor flex dinámico: En móviles se apilan verticalmente poniendo primero Ver PDF -->
                         <div class="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-2">
                             <button onclick="openPdfViewer('${record.id}')" class="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-2 sm:py-1 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 order-1 sm:order-1 text-center">
                                 Ver PDF
@@ -844,7 +840,6 @@
             }
         }
 
-        // --- Asistente Médico Inteligente (Gemini API) con Lector de PDF ---
         const geminiModal = document.getElementById('gemini-modal');
         const geminiModalTitle = document.getElementById('gemini-modal-title');
         const geminiModalContent = document.getElementById('gemini-modal-content');
