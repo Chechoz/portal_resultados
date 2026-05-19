@@ -1,0 +1,25 @@
+{
+  "name": "SAZ Portal de Resultados",
+  "short_name": "SAZ Portal",
+  "description": "Portal de resultados médicos del Laboratorio SAZ",
+  "start_url": "/portal_resultados/",
+  "scope": "/portal_resultados/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f4f6",
+  "theme_color": "#2563EB",
+  "icons": [
+    {
+      "src": "saz.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "saz.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
