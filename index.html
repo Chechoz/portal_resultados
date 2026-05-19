@@ -53,8 +53,8 @@
                         <span class="h-2 w-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse" id="status-dot"></span>
                         <span id="status-text">Conectando...</span>
                     </span>
-                    <button id="nav-patient" class="px-3 py-2 rounded-md text-sm font-medium bg-blue-700 hover:bg-blue-800 focus:outline-none">Área Paciente</button>
-                    <button id="nav-admin" class="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-700 focus:outline-none">Administración 🔒</button>
+                    <button id="nav-patient" class="px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium bg-blue-700 hover:bg-blue-800 focus:outline-none">Área Paciente</button>
+                    <button id="nav-admin" class="px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium text-blue-100 hover:bg-blue-700 focus:outline-none">Admin 🔒</button>
                 </div>
             </div>
         </div>
@@ -107,9 +107,8 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estudio</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="results-table-body" class="bg-white divide-y divide-gray-200">
@@ -122,10 +121,29 @@
         </div>
 
         <div id="view-pdf-viewer" class="w-full max-w-5xl bg-white rounded-xl shadow-lg p-6 fade-in hidden h-[85vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
                 <h3 class="text-lg font-bold text-gray-900" id="pdf-title">Visor de Resultados</h3>
-                <div class="flex space-x-3">
-                    <button id="btn-close-pdf" class="flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <div class="flex flex-wrap gap-2">
+                    <button id="btn-print-pdf" class="flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+                        <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Imprimir
+                    </button>
+                    <button id="btn-share-email" class="flex items-center px-3 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-100 transition-colors">
+                        <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Mail
+                    </button>
+                    <button id="btn-share-whatsapp" class="flex items-center px-3 py-2 border border-emerald-300 shadow-sm text-sm font-medium rounded-md text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors">
+                        <svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.528 5.855L.057 23.448a.5.5 0 00.609.61l5.61-1.471A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.866 9.866 0 01-5.034-1.377l-.361-.214-3.733.979.997-3.645-.235-.374A9.862 9.862 0 012.1 12C2.1 6.533 6.533 2.1 12 2.1c5.467 0 9.9 4.433 9.9 9.9 0 5.467-4.433 9.9-9.9 9.9z"/>
+                        </svg>
+                        WhatsApp
+                    </button>
+                    <button id="btn-close-pdf" class="flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                         Cerrar
                     </button>
                 </div>
@@ -718,19 +736,16 @@
             records.forEach(record => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${record.date}
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>${record.date}</div>
+                        <div class="text-xs font-medium text-gray-900 mt-0.5">${record.studyName}</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm font-medium text-gray-900">${record.studyName}</div>
-                        <div class="text-xs text-gray-400 font-medium">Google Drive</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-2">
-                            <button onclick="openPdfViewer('${record.id}')" class="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-2 sm:py-1 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 order-1 sm:order-1 text-center">
+                            <button onclick="openPdfViewer('${record.id}')" class="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-2 sm:py-1 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 text-center">
                                 Ver PDF
                             </button>
-                            <button onclick="explainStudy('${record.id}')" class="text-purple-600 hover:text-purple-900 bg-purple-50 px-3 py-2 sm:py-1 rounded-md hover:bg-purple-100 transition-colors border border-purple-200 order-2 sm:order-2 text-center" title="Explicación con IA">
+                            <button onclick="explainStudy('${record.id}')" class="text-purple-600 hover:text-purple-900 bg-purple-50 px-3 py-2 sm:py-1 rounded-md hover:bg-purple-100 transition-colors border border-purple-200 text-center" title="Explicación con IA">
                                 ✨ ¿De qué trata?
                             </button>
                         </div>
@@ -746,10 +761,30 @@
 
             pdfTitle.textContent = `${record.studyName} - ${record.date}`;
             const drivePreviewUrl = `https://drive.google.com/file/d/${record.driveFileId}/preview`;
+            const driveShareUrl = `https://drive.google.com/file/d/${record.driveFileId}/view`;
 
             pdfEmbedContainer.innerHTML = `
                 <iframe src="${drivePreviewUrl}" width="100%" height="100%" style="border: none;" allow="autoplay"></iframe>
             `;
+
+            // Imprimir: abre el PDF en nueva pestaña para imprimir
+            document.getElementById('btn-print-pdf').onclick = () => {
+                const printWindow = window.open(driveShareUrl, '_blank');
+                if (printWindow) printWindow.focus();
+            };
+
+            // Compartir por Mail
+            document.getElementById('btn-share-email').onclick = () => {
+                const subject = encodeURIComponent(`Resultado médico: ${record.studyName}`);
+                const body = encodeURIComponent(`Hola, te comparto mi resultado de ${record.studyName} del ${record.date}:\n\n${driveShareUrl}`);
+                window.open(`mailto:?subject=${subject}&body=${body}`);
+            };
+
+            // Compartir por WhatsApp
+            document.getElementById('btn-share-whatsapp').onclick = () => {
+                const text = encodeURIComponent(`Hola, te comparto mi resultado de *${record.studyName}* del ${record.date}:\n${driveShareUrl}`);
+                window.open(`https://wa.me/?text=${text}`, '_blank');
+            };
 
             switchView('pdfViewer');
         };
@@ -877,7 +912,6 @@
     </script>
 
     <script>
-        // Registro del Service Worker para PWA completa
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/portal_resultados/sw.js')
