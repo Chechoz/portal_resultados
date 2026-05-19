@@ -1,4 +1,4 @@
-const CACHE_NAME = 'saz-portal-v1';
+const CACHE_NAME = 'saz-portal-v2';
 const ASSETS_TO_CACHE = [
   '/portal_resultados/',
   '/portal_resultados/index.html',
