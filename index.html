@@ -14,6 +14,8 @@
     <meta name="theme-color" content="#2563EB"> <!-- Azul de la marca -->
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Incluimos PDF.js para poder leer y extraer texto directamente desde los PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -293,6 +295,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // CONFIGURAMOS EL WORKER DE PDF.JS PARA EXTRAER EL TEXTO DE FORMA INTERNA
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
         // CONTRASEÑA PARA ADMINISTRACIÓN
         const ADMIN_PIN = "999666";
@@ -763,7 +768,7 @@
                         <div class="text-xs text-gray-500 text-blue-500 font-medium">Google Drive</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                        <button onclick="explainStudy('${record.studyName}')" class="text-purple-600 hover:text-purple-900 bg-purple-50 px-3 py-1 rounded-md hover:bg-purple-100 transition-colors border border-purple-200" title="Explicación con IA">
+                        <button onclick="explainStudy('${record.id}')" class="text-purple-600 hover:text-purple-900 bg-purple-50 px-3 py-1 rounded-md hover:bg-purple-100 transition-colors border border-purple-200" title="Explicación con IA">
                             ✨ ¿De qué trata?
                         </button>
                         <button onclick="openPdfViewer('${record.id}')" class="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded-md hover:bg-blue-100 transition-colors border border-blue-200">
@@ -795,7 +800,7 @@
             switchView('patientResults');
         });
 
-        // --- Asistente Médico Inteligente (Gemini API) ---
+        // --- Asistente Médico Inteligente (Gemini API) con Lector de PDF ---
         const geminiModal = document.getElementById('gemini-modal');
         const geminiModalTitle = document.getElementById('gemini-modal-title');
         const geminiModalContent = document.getElementById('gemini-modal-content');
@@ -815,17 +820,79 @@
             }
         }
 
-        async function getStudyExplanation(studyName) {
+        // EXTRAE EL TEXTO DE FORMA INTERNA DESDE GOOGLE DRIVE MEDIANTE PROXY CORS Y PDF.JS
+        async function extractTextFromPDF(driveFileId) {
+            const downloadUrl = `https://drive.google.com/uc?export=download&id=${driveFileId}`;
+            // allorigins.win es un proxy CORS confiable y gratuito
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(downloadUrl)}`;
+            
+            const response = await fetch(proxyUrl);
+            if (!response.ok) {
+                throw new Error("No se pudo descargar el archivo de Drive. Verifica que sea un archivo accesible públicamente.");
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = "";
+            
+            // Leemos un límite máximo de 3 páginas para evitar sobrecarga y costos de API
+            const maxPages = Math.min(pdf.numPages, 3);
+            for (let i = 1; i <= maxPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(" ");
+                fullText += pageText + "\n";
+            }
+            return fullText.trim();
+        }
+
+        async function getStudyExplanation(record) {
             const activeApiKey = localStorage.getItem('gemini_api_key') || "";
             
             if (!activeApiKey) {
                 return "<strong>El Asistente Médico de Inteligencia Artificial de SAZ no está configurado actualmente.</strong><br><br>" +
                        "Para activar las explicaciones automáticas, el administrador del laboratorio debe ingresar su clave gratuita de Gemini en el <strong>Panel de Administración</strong>.";
             }
+
+            let pdfContentText = "";
+            let usingFallback = false;
+            let downloadErrorMsg = "";
+
+            try {
+                // Intentar descargar y extraer el texto directamente de Google Drive
+                pdfContentText = await extractTextFromPDF(record.driveFileId);
+                if (!pdfContentText || pdfContentText.length < 10) {
+                    throw new Error("El archivo PDF parece ser una imagen o no contiene texto editable.");
+                }
+            } catch (error) {
+                console.warn("Fallo al extraer texto de PDF, usando explicación basada en título:", error);
+                usingFallback = true;
+                downloadErrorMsg = error.message;
+            }
             
             // Usamos el endpoint estable y de producción oficial para la API de Gemini 2.5 Flash
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeApiKey}`;
-            const prompt = `Eres un asistente médico amigable y de confianza del laboratorio "SAZ Laboratorio de Análisis". Explica de forma muy sencilla, breve (máximo 2 párrafos cortos) y en lenguaje no técnico para un paciente que acaba de realizarse estudios, qué es un estudio médico de "${studyName}" y para qué sirve en general. Finaliza el mensaje recordando siempre con amabilidad que los resultados finales deben ser interpretados por su médico de cabecera. Redacta en texto plano, sin usar negritas fuertes ni marcadores complejos.`;
+            
+            let prompt = "";
+            if (!usingFallback) {
+                // Prompt ideal: analizando el contenido real del documento
+                prompt = `Eres un asistente médico amigable, empático y de confianza de "SAZ Laboratorio de Análisis". 
+A continuación te proporciono el texto real extraído de los resultados del paciente del estudio "${record.studyName}":
+
+[INICIO DEL REPORTE DEL PDF]
+${pdfContentText}
+[FIN DEL REPORTE DEL PDF]
+
+Por favor, analiza de forma resumida y amigable estos resultados médicos. Explica qué significan los parámetros principales detectados en palabras simples (máximo 3 párrafos cortos). 
+Si detectas valores con asteriscos, signos de alerta o valores fuera de rango de referencia, menciónalos de manera muy sutil y sin alarmar, aclarando siempre de forma muy empática que los resultados deben ser interpretados clínicamente por su médico de cabecera para el diagnóstico definitivo. Redacta en texto plano, sin negritas fuertes ni caracteres de marcado complejos.`;
+            } else {
+                // Prompt de respaldo: Explicar de qué trata de forma genérica
+                prompt = `Eres un asistente médico amigable y de confianza del laboratorio "SAZ Laboratorio de Análisis". 
+Lamentablemente, no pudimos procesar el texto escrito dentro del PDF de resultados (Motivo: ${downloadErrorMsg}).
+
+Por lo tanto, explica de forma muy sencilla, breve (máximo 2 párrafos cortos) y en lenguaje no técnico para el paciente, qué es un estudio médico de "${record.studyName}" en general, para qué sirve habitualmente y qué parámetros suele medir. 
+Finaliza el mensaje recordando siempre con amabilidad que cuando tenga el reporte físico, los resultados definitivos deben ser interpretados por su médico de cabecera. Redacta en texto plano, sin usar negritas fuertes ni marcadores complejos.`;
+            }
 
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }]
@@ -842,79 +909,47 @@
                     throw new Error(data.error.message || "Error devuelto por la API de Google.");
                 }
 
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar la explicación en este momento.";
+                let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar la explicación en este momento.";
+                
+                // Si usamos la explicación genérica de respaldo, le avisamos al paciente al principio
+                if (usingFallback) {
+                    responseText = `<div class="mb-3 p-3 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700 italic">
+                        Nota: No pudimos leer los resultados específicos de tu informe PDF en la nube (puede que sea un escaneo o requiera permisos de red especiales), por lo que te ofrecemos una guía informativa sobre qué trata este estudio en general:
+                    </div>` + responseText;
+                }
+
+                return responseText;
             } catch (error) {
                 console.error("Error detallado al consultar Gemini:", error);
                 return `<strong>Hubo un problema al conectar con el asistente de IA de Google.</strong><br><br>` +
                        `<em>Detalle del error:</em> ${error.message}<br><br>` +
-                       `Por favor, verifica que la clave copiada desde Google AI Studio no contenga espacios extras y que el proveedor de servicios de Gemini no tenga restricciones temporales de cuota en tu región.`;
+                       `Por favor, verifica que la clave de API sea válida y no tenga limitaciones de cuota en tu región.`;
             }
         }
 
-        const explainStudy = async function(studyName) {
+        const explainStudy = async function(recordId) {
+            const record = uploadedResults.find(r => r.id === recordId);
+            if (!record) return;
+
             geminiModal.classList.remove('hidden');
-            geminiModalTitle.textContent = `Sobre el estudio: ${studyName}`;
-            geminiModalContent.innerHTML = '<div class="flex items-center text-purple-600"><svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Consultando al asistente inteligente de SAZ...</div>';
+            geminiModalTitle.textContent = `Análisis de estudio: ${record.studyName}`;
+            geminiModalContent.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-6 text-purple-600">
+                    <svg class="animate-spin h-8 w-8 mb-3" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm font-medium animate-pulse">Descargando y analizando reporte PDF con Inteligencia Artificial...</span>
+                </div>
+            `;
             
-            const explanation = await getStudyExplanation(studyName);
+            const explanation = await getStudyExplanation(record);
             geminiModalContent.innerHTML = explanation.replace(/\n/g, '<br>');
         };
 
         btnCloseGemini.addEventListener('click', () => {
             geminiModal.classList.add('hidden');
         });
-
-        // --- LÓGICA DE INSTALACIÓN PWA (Android & iOS) ---
-        let deferredPrompt;
-        const btnInstallPwa = document.getElementById('btn-install-pwa');
-        const iosInstructions = document.getElementById('ios-install-instructions');
-
-        // Detectar si es iOS (iPhone/iPad)
-        const isIos = () => {
-            const userAgent = window.navigator.userAgent.toLowerCase();
-            return /iphone|ipad|ipod/.test(userAgent);
-        };
-
-        // Detectar si ya está instalada en modo app independiente
-        const isInStandaloneMode = () => {
-            return ('standalone' in window.navigator) && (window.navigator.standalone) || (window.matchMedia('(display-mode: standalone)').matches);
-        };
-
-        // Escuchar el evento de instalación en Android / Chrome
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevenir que el navegador muestre su cartel de instalación por defecto
-            e.preventDefault();
-            // Guardar el evento para dispararlo luego
-            deferredPrompt = e;
-            // Mostrar nuestro botón personalizado en el Navbar
-            btnInstallPwa.classList.remove('hidden');
-        });
-
-        btnInstallPwa.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                // Mostrar el cartel nativo de instalación
-                deferredPrompt.prompt();
-                // Esperar la respuesta del usuario
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    console.log('El usuario aceptó instalar la app.');
-                }
-                // Limpiar el prompt ya usado
-                deferredPrompt = null;
-                btnInstallPwa.classList.add('hidden');
-            }
-        });
-
-        // Si se instala correctamente, ocultamos el botón
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA instalada con éxito.');
-            btnInstallPwa.classList.add('hidden');
-        });
-
-        // Mostrar instrucciones específicas de Safari si es iOS y no está instalada aún
-        if (isIos() && !isInStandaloneMode()) {
-            iosInstructions.classList.remove('hidden');
-        }
 
         // Exponer explícitamente las funciones al contexto global window
         window.explainStudy = explainStudy;
