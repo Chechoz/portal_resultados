@@ -248,8 +248,8 @@
                         </div>
                         <h3 class="text-lg leading-6 font-medium text-gray-900 ml-4" id="gemini-modal-title">¿Qué es este estudio?</h3>
                     </div>
-                    <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-700 leading-relaxed" id="gemini-modal-content">Generando explicación por la IA...</p>
+                    <div class="mt-2 px-7 py-3 font-normal text-sm text-gray-700 leading-relaxed" id="gemini-modal-content">
+                        Generando explicación por la IA...
                     </div>
                     <div class="items-center px-4 py-3 mt-4 text-center sm:px-6 sm:flex sm:flex-row-reverse border-t">
                         <button id="btn-close-gemini" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 sm:ml-3 sm:w-auto sm:text-sm">
@@ -816,7 +816,6 @@
         }
 
         async function getStudyExplanation(studyName) {
-            // Evaluamos primero la clave cargada en localStorage por el administrador
             const activeApiKey = localStorage.getItem('gemini_api_key') || "";
             
             if (!activeApiKey) {
@@ -824,7 +823,8 @@
                        "Para activar las explicaciones automáticas, el administrador del laboratorio debe ingresar su clave gratuita de Gemini en el <strong>Panel de Administración</strong>.";
             }
             
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${activeApiKey}`;
+            // Usamos el endpoint estable y de producción oficial para la API de Gemini 2.5 Flash
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeApiKey}`;
             const prompt = `Eres un asistente médico amigable y de confianza del laboratorio "SAZ Laboratorio de Análisis". Explica de forma muy sencilla, breve (máximo 2 párrafos cortos) y en lenguaje no técnico para un paciente que acaba de realizarse estudios, qué es un estudio médico de "${studyName}" y para qué sirve en general. Finaliza el mensaje recordando siempre con amabilidad que los resultados finales deben ser interpretados por su médico de cabecera. Redacta en texto plano, sin usar negritas fuertes ni marcadores complejos.`;
 
             const payload = {
@@ -837,10 +837,17 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                if (data.error) {
+                    throw new Error(data.error.message || "Error devuelto por la API de Google.");
+                }
+
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar la explicación en este momento.";
             } catch (error) {
-                console.error("Error al consultar Gemini:", error);
-                return "Hubo un problema al conectar con el asistente médico de IA. Por favor, verifica que tu clave de Gemini ingresada en Administración sea válida.";
+                console.error("Error detallado al consultar Gemini:", error);
+                return `<strong>Hubo un problema al conectar con el asistente de IA de Google.</strong><br><br>` +
+                       `<em>Detalle del error:</em> ${error.message}<br><br>` +
+                       `Por favor, verifica que la clave copiada desde Google AI Studio no contenga espacios extras y que el proveedor de servicios de Gemini no tenga restricciones temporales de cuota en tu región.`;
             }
         }
 
