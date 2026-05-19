@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal de Resultados Médicos</title>
+    
+    <!-- Etiquetas Meta para PWA (iOS y Android) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SAZ Portal">
+    <link rel="apple-touch-icon" href="saz.jpg">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563EB"> <!-- Azul de la marca -->
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -31,7 +40,15 @@
                     <img src="saz.jpg" alt="Logo SAZ Laboratorio" class="h-12 w-auto mr-3 bg-white rounded px-1 py-0.5" onerror="this.onerror=null; this.src='https://placehold.co/150x50/white/red?text=SAZ';">
                     <span class="font-bold text-xl tracking-tight hidden sm:block">Portal de Resultados</span>
                 </div>
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <!-- Botón para instalar PWA (Se muestra si el navegador lo permite) -->
+                    <button id="btn-install-pwa" class="hidden bg-green-500 hover:bg-green-600 text-white px-2.5 py-1.5 rounded-md text-xs font-semibold flex items-center transition-colors shadow-sm animate-bounce">
+                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Instalar App
+                    </button>
+
                     <!-- Estado de conexión híbrido -->
                     <span id="cloud-status" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-800 text-blue-100">
                         <span class="h-2 w-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse" id="status-dot"></span>
@@ -62,6 +79,15 @@
                     Buscar
                 </button>
             </form>
+            
+            <!-- Indicación de instalación nativa móvil para iOS -->
+            <div id="ios-install-instructions" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                <p class="font-bold flex items-center mb-1">
+                    <span class="text-base mr-1.5">📲</span> Instala esta App en tu iPhone:
+                </p>
+                <p>Presiona el botón de <strong>Compartir</strong> (cuadrado con flecha arriba en Safari) y luego selecciona la opción <strong>"Agregar a pantalla de inicio"</strong>.</p>
+            </div>
+
             <div id="search-error" class="mt-4 text-red-500 text-sm text-center hidden">
                 No se encontraron resultados para ese ID.
             </div>
@@ -831,7 +857,59 @@
             geminiModal.classList.add('hidden');
         });
 
-        // Exponer explícitamente las funciones al contexto global window (Requerido por type="module" para que respondan los onclick)
+        // --- LÓGICA DE INSTALACIÓN PWA (Android & iOS) ---
+        let deferredPrompt;
+        const btnInstallPwa = document.getElementById('btn-install-pwa');
+        const iosInstructions = document.getElementById('ios-install-instructions');
+
+        // Detectar si es iOS (iPhone/iPad)
+        const isIos = () => {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent);
+        };
+
+        // Detectar si ya está instalada en modo app independiente
+        const isInStandaloneMode = () => {
+            return ('standalone' in window.navigator) && (window.navigator.standalone) || (window.matchMedia('(display-mode: standalone)').matches);
+        };
+
+        // Escuchar el evento de instalación en Android / Chrome
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevenir que el navegador muestre su cartel de instalación por defecto
+            e.preventDefault();
+            // Guardar el evento para dispararlo luego
+            deferredPrompt = e;
+            // Mostrar nuestro botón personalizado en el Navbar
+            btnInstallPwa.classList.remove('hidden');
+        });
+
+        btnInstallPwa.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Mostrar el cartel nativo de instalación
+                deferredPrompt.prompt();
+                // Esperar la respuesta del usuario
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('El usuario aceptó instalar la app.');
+                }
+                // Limpiar el prompt ya usado
+                deferredPrompt = null;
+                btnInstallPwa.classList.add('hidden');
+            }
+        });
+
+        // Si se instala correctamente, ocultamos el botón
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA instalada con éxito.');
+            btnInstallPwa.classList.add('hidden');
+        });
+
+        // Mostrar instrucciones específicas de Safari si es iOS y no está instalada aún
+        if (isIos() && !isInStandaloneMode()) {
+            iosInstructions.classList.remove('hidden');
+        }
+
+        // Exponer explícitamente las funciones al contexto global window
         window.explainStudy = explainStudy;
         window.openPdfViewer = openPdfViewer;
         window.openDeleteConfirm = openDeleteConfirm;
